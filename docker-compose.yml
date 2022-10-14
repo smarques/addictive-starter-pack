@@ -1,24 +1,24 @@
 version: '3'
 services:
-  # keycloak:
-  #   restart: unless-stopped
-  #   image: quay.io/keycloak/keycloak:17.0.0
-  #   container_name: keycloak
-  #   depends_on:
-  #     - postgres
-  #   ports:
-  #     - 9080:8080
-  #     - 8443:8443
-  #   environment:
-  #     - KEYCLOAK_ADMIN=admin
-  #     - KEYCLOAK_ADMIN_PASSWORD=admin
-  #     #- KEYCLOAK_WELCOME_THEME=viblio-theme
-  #     - PROXY_ADDRESS_FORWARDING=true
-  #   volumes:
-  #     - keycloak-data-volume:/var/lib/keycloak/data
-  
-  #     - ./keycloak/conf/:/opt/keycloak/conf/
-  #   command: ["start-dev", "--db=postgres", "--db-url-host=${KC_DB_HOST}", "--db-url=jdbc:postgresql://${KC_DB_HOST}/${KC_DB_NAME}", "--db-username=${KC_DB_USER}", "--db-password=${KC_DB_PASS}", "--proxy=edge", "--spi-theme-static-max-age=-1", "--spi-theme-cache-themes=false", "--spi-theme-cache-templates=false","--spi-theme-login-theme=viblio-theme", "--spi-events-listener-email-exclude-events=UPDATE_TOTP,REMOVE_TOTP,LOGIN_ERROR"]
+  keycloak:
+    restart: unless-stopped
+    image: quay.io/keycloak/keycloak:17.0.0
+    container_name: keycloak
+    depends_on:
+      - postgres
+    ports:
+      - 9080:8080
+      - 8443:8443
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      #- KEYCLOAK_WELCOME_THEME=viblio-theme
+      - PROXY_ADDRESS_FORWARDING=true
+    volumes:
+      - keycloak-data-volume:/var/lib/keycloak/data
+ 
+      - ./keycloak/conf/:/opt/keycloak/conf/
+    command: ["start-dev", "--db=postgres", "--db-url-host=postgres", "--db-url=jdbc:postgresql://postgres/keycloak", "--db-username=addictive", "--db-password=addictive", "--proxy=edge"]
 
   casdoor:
     restart: always

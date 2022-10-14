@@ -1,1 +1,2 @@
-per far funzionare  casbin occorre aggiungere un database 'casbin' a postgress
+- per far funzionare casdoor occorre aggiungere un database 'casdoor' a postgress
+- per far funzionare keycloak occorre aggiungere un database 'keycloak' a postgress
