@@ -18,7 +18,7 @@ services:
       - keycloak-data-volume:/var/lib/keycloak/data
  
       - ./keycloak/conf/:/opt/keycloak/conf/
-    command: ["start-dev", "--db=postgres", "--db-url-host=postgres", "--db-url=jdbc:postgresql://postgres/keycloak", "--db-username=addictive", "--db-password=addictive", "--proxy=edge"]
+    command: ["start-dev", "--db=postgres", "--db-url-host=postgres", "--db-url=jdbc:postgresql://postgres/keycloak", "--db-username=addictive", "--db-password=addictive", "--proxy=edge", "--hostname=keycloak.addictive.local"] #, "--hostname-strict-backchannel=true"
 
   casdoor:
     restart: always
@@ -34,22 +34,63 @@ services:
     volumes:
       - ./casdoor/conf/app.conf:/conf/app.conf
 
-  keystone:
-    container_name: keystone
+  # keystone:
+  #   container_name: keystone
+  #   image: node:16.17
+  #   ports:
+  #     - 3000:3000
+  #   # user: "node"
+  #   working_dir: /home/node/app/app
+  #   environment:
+  #     - NODE_ENV=development
+  #     - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+  #   volumes:
+  #       - ./keystone:/home/node/app
+  #       - keystone-node_modules:/home/node/app/node_modules
+  #   command: ["yarn", "dev"]
+  #   links:
+  #       - postgres
+
+  todo-app:
+    container_name: todo-app
     image: node:16.17
     ports:
-      - 3000:3000
+      - 7070:7070
     # user: "node"
-    working_dir: /home/node/app/app
+    working_dir: /home/node/app
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+      # - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+      - PORT=7070
+      - AUTH0_DOMAIN=http://keycloak.addictive.local/realms/addictive
+      - AUTH0_CLIENT_ID=todo-app-backend
+      - AUTH0_CLIENT_SECRET=QDUa1BxHO0wiznAtkvTDvO4QnEpLnCJH
+
     volumes:
-        - ./keystone:/home/node/app
-        - keystone-node_modules:/home/node/app/node_modules
+      - ./todo-app/data:/home/node/data
+      - ./todo-app/app:/home/node/app
+      - todo-app-node_modules:/home/node/app/node_modules
     command: ["yarn", "dev"]
     links:
         - postgres
+
+  proxy:
+    restart: unless-stopped
+    image: nginx:1.21.6-alpine
+    container_name: proxy
+    depends_on:
+      - "keycloak"
+      - "todo-app"
+    environment:
+      -  KEYCLOAK_DOMAIN=${KEYCLOAK_DOMAIN}
+      -  TODO_DOMAIN=${TODO_DOMAIN}
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./proxy/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/templates_no_https:/etc/nginx/templates:ro
+
 
   # production-server:
   #   container_name: service-name
@@ -82,3 +123,4 @@ volumes:
   postgres-volume:
   keycloak-data-volume:
   keystone-node_modules:
+  todo-app-node_modules:
