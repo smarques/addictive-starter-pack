@@ -14,65 +14,74 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       #- KEYCLOAK_WELCOME_THEME=viblio-theme
       - PROXY_ADDRESS_FORWARDING=true
+      ## admin login:pass is admin:123
     volumes:
       - keycloak-data-volume:/var/lib/keycloak/data
  
       - ./keycloak/conf/:/opt/keycloak/conf/
     command: ["start-dev", "--db=postgres", "--db-url-host=postgres", "--db-url=jdbc:postgresql://postgres/keycloak", "--db-username=addictive", "--db-password=addictive", "--proxy=edge", "--hostname=keycloak.addictive.local"] #, "--hostname-strict-backchannel=true"
 
-  casdoor:
-    restart: always
-    image: casbin/casdoor
-    entrypoint: /bin/sh -c './server --createDatabase=true'
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-    environment:
-      RUNNING_IN_DOCKER: "true"
-    ## admin login:pass is admin:123
-    volumes:
-      - ./casdoor/conf/app.conf:/conf/app.conf
-
-  # keystone:
-  #   container_name: keystone
-  #   image: node:16.17
+  # casdoor:
+  #   restart: always
+  #   image: casbin/casdoor
+  #   entrypoint: /bin/sh -c './server --createDatabase=true'
   #   ports:
-  #     - 3000:3000
-  #   # user: "node"
-  #   working_dir: /home/node/app/app
+  #     - "8000:8000"
+  #   depends_on:
+  #     - postgres
   #   environment:
-  #     - NODE_ENV=development
-  #     - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+  #     RUNNING_IN_DOCKER: "true"
+  #   ## admin login:pass is admin:123
   #   volumes:
-  #       - ./keystone:/home/node/app
-  #       - keystone-node_modules:/home/node/app/node_modules
-  #   command: ["yarn", "dev"]
-  #   links:
-  #       - postgres
+  #     - ./casdoor/conf/app.conf:/conf/app.conf
 
-  todo-app:
-    container_name: todo-app
+  keystone:
+    container_name: keystone
     image: node:16.17
     ports:
-      - 7070:7070
+      - 3000:3000
     # user: "node"
-    working_dir: /home/node/app
+    working_dir: /home/node/app/app
     environment:
       - NODE_ENV=development
-      # - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
-      - PORT=7070
-      - AUTH0_DOMAIN=http://keycloak.addictive.local/realms/addictive
-      - AUTH0_CLIENT_ID=todo-app-backend
-      - AUTH0_CLIENT_SECRET=QDUa1BxHO0wiznAtkvTDvO4QnEpLnCJH
+      - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+      - SESSION_SECRET=catopleba89catopleba89catopleba89catopleba89catopleba89catopleba89v
+      - AUTH_DOMAIN=http://${KEYCLOAK_DOMAIN}/realms/addictive
+      - AUTH_CLIENT_ID=todo-app-backend
+      - AUTH_CLIENT_SECRET=QDUa1BxHO0wiznAtkvTDvO4QnEpLnCJH
+      - NEXTAUTH_URL=http://keystone.addictive.local
 
     volumes:
-      - ./todo-app/data:/home/node/data
-      - ./todo-app/app:/home/node/app
-      - todo-app-node_modules:/home/node/app/node_modules
+        - ./keystone:/home/node/app
+        - keystone-node_modules:/home/node/app/node_modules
     command: ["yarn", "dev"]
     links:
         - postgres
+
+  # todo-app:
+  #   container_name: todo-app
+  #   image: node:16.17
+  #   ports:
+  #     - 7070:7070
+  #   # user: "node"
+  #   working_dir: /home/node/app
+  #   environment:
+  #     - NODE_ENV=development
+  #     # - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
+  #     - PORT=7070
+  #     - AUTH_DOMAIN=http://${KEYCLOAK_DOMAIN}/realms/addictive
+  #     - AUTH_CLIENT_ID=todo-app-backend
+  #     - AUTH_CLIENT_SECRET=QDUa1BxHO0wiznAtkvTDvO4QnEpLnCJH
+  #     - AUTH_REALM=${AUTH_REALM}
+  #     - AUTH_DISCOVERY_URL=http://keycloak:8080
+  #     - APP_URL=http://${TODO_DOMAIN}
+  #   volumes:
+  #     - ./todo-app/data:/home/node/data
+  #     - ./todo-app/app:/home/node/app
+  #     - todo-app-node_modules:/home/node/app/node_modules
+  #   command: ["yarn", "dev"]
+  #   links:
+  #       - postgres
 
   proxy:
     restart: unless-stopped
@@ -80,10 +89,12 @@ services:
     container_name: proxy
     depends_on:
       - "keycloak"
-      - "todo-app"
+      #- "todo-app"
+      - "keystone"
     environment:
       -  KEYCLOAK_DOMAIN=${KEYCLOAK_DOMAIN}
       -  TODO_DOMAIN=${TODO_DOMAIN}
+      -  KEYSTONE_DOMAIN=${KEYSTONE_DOMAIN}
     ports:
       - "443:443"
       - "80:80"

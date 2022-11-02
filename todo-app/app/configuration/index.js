@@ -1,25 +1,32 @@
 // import { Issuer } from 'openid-client';
 const { Issuer } = require("openid-client"); 
+let cachedClient = false;
 const config = { 
   PORT: parseInt(process.env.PORT) || 7070,
-  AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
-  AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
-  AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET
+  // AUTH_DOMAIN: process.env.AUTH_DOMAIN,
+  AUTH_CLIENT_ID: process.env.AUTH_CLIENT_ID,
+  AUTH_REALM: process.env.AUTH_REALM,
+  AUTH_CLIENT_SECRET: process.env.AUTH_CLIENT_SECRET,
+  AUTH_DISCOVERY_URL: process.env.AUTH_DISCOVERY_URL,
+  APP_URL: process.env.APP_URL
 }
 
-config.loadIssuer = async () => {
-  // const Issuer = require('openid-client').Issuer;
-  
-  console.log(`auth domain: ${config.AUTH0_DOMAIN}`)
-  try {
-  const openIdIssuer = await Issuer.discover('http://keycloak:8080/realms/addictive'+'/');
-  console.log('Discovered issuer %s %O', openIdIssuer.issuer, openIdIssuer.metadata);
-  // return Promise.resolve(openIdIssuer);
-  } catch (e) {
-    console.log("auth0 error",e);
+config.loadOpenIDClient = async () => {
+  if(!cachedClient){
+    const authDiscovery = `${config.AUTH_DISCOVERY_URL}/realms/${config.AUTH_REALM}/`
+    console.log(`auth discovery: ${authDiscovery}`)
+    const openIdIssuer = await Issuer.discover(authDiscovery);
+    console.log('Discovered issuer %s %O', openIdIssuer.issuer, openIdIssuer.metadata)
+    cachedClient = new openIdIssuer.Client({
+      client_id: config.AUTH_CLIENT_ID,
+      client_secret: config.AUTH_CLIENT_SECRET,
+      //redirect_uris: ['http://localhost:3000/cb'],
+      response_types: ['code'],
+      // id_token_signed_response_alg (default "RS256")
+      // token_endpoint_auth_method (default "client_secret_basic")
+    }); // => Client
   } 
-
- 
+  return cachedClient;
 }
 
 
