@@ -1,9 +1,9 @@
 version: '3'
 services:
-  keycloak:
+  addictive-keycloak:
     restart: unless-stopped
     image: quay.io/keycloak/keycloak:17.0.0
-    container_name: keycloak
+    container_name: addictive-keycloak
     depends_on:
       - postgres
     ports:
@@ -17,26 +17,11 @@ services:
       ## admin login:pass is admin:123
     volumes:
       - keycloak-data-volume:/var/lib/keycloak/data
- 
       - ./keycloak/conf/:/opt/keycloak/conf/
     command: ["start-dev", "--db=postgres", "--db-url-host=postgres", "--db-url=jdbc:postgresql://postgres/keycloak", "--db-username=addictive", "--db-password=addictive", "--proxy=edge", "--hostname=keycloak.addictive.local"] #, "--hostname-strict-backchannel=true"
 
-  # casdoor:
-  #   restart: always
-  #   image: casbin/casdoor
-  #   entrypoint: /bin/sh -c './server --createDatabase=true'
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - postgres
-  #   environment:
-  #     RUNNING_IN_DOCKER: "true"
-  #   ## admin login:pass is admin:123
-  #   volumes:
-  #     - ./casdoor/conf/app.conf:/conf/app.conf
-
-  keystone:
-    container_name: keystone
+  addictive-keystone:
+    container_name: addictive-keystone
     image: node:16.17
     ports:
       - 3000:3000
@@ -47,9 +32,11 @@ services:
       - DATABASE_URL=postgres://postgres:addictive@addictive:5432/addictive
       - SESSION_SECRET=catopleba89catopleba89catopleba89catopleba89catopleba89catopleba89v
       - AUTH_DOMAIN=http://${KEYCLOAK_DOMAIN}/realms/addictive
+      - AUTH_DOMAIN_INTERNAL=http://addictive-keycloak:8080/realms/addictive
       - AUTH_CLIENT_ID=todo-app-backend
       - AUTH_CLIENT_SECRET=QDUa1BxHO0wiznAtkvTDvO4QnEpLnCJH
-      - NEXTAUTH_URL=http://keystone.addictive.local
+      - NEXTAUTH_URL=http://keystone.addictive.local/admin/api/auth
+      - NEXTAUTH_URL_INTERNAL=http://addictive-keystone:3000/admin/api/auth
 
     volumes:
         - ./keystone:/home/node/app
@@ -83,18 +70,22 @@ services:
   #   links:
   #       - postgres
 
-  proxy:
+  addictive-proxy:
     restart: unless-stopped
     image: nginx:1.21.6-alpine
-    container_name: proxy
+    container_name: addictive-proxy
     depends_on:
-      - "keycloak"
+      - "addictive-keycloak"
       #- "todo-app"
-      - "keystone"
+      - "addictive-keystone"
     environment:
       -  KEYCLOAK_DOMAIN=${KEYCLOAK_DOMAIN}
       -  TODO_DOMAIN=${TODO_DOMAIN}
       -  KEYSTONE_DOMAIN=${KEYSTONE_DOMAIN}
+      -  KEYCLOAK_CONTAINER=addictive-keycloak
+      -  KEYCLOAK_CONTAINER_PORT=8080
+      -  KEYSTONE_CONTAINER=addictive-keystone
+      -  KEYSTONE_CONTAINER_PORT=3000
     ports:
       - "443:443"
       - "80:80"

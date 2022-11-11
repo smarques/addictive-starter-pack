@@ -2,12 +2,14 @@
 - sudo cli/bin/dev setupDomains    
 you can remove them with sudo cli/bin/dev removeDomains    
 
-- # CASDOOR
-- per far funzionare casdoor occorre aggiungere un database 'casdoor' a postgress
-- admin login:pass is admin:123
   # KeyCloak
-- per far funzionare keycloak occorre aggiungere un database 'keycloak' a postgres
+- per far funzionare keycloak occorre aggiungere un database 'keycloak' a postgres, la configurazione di docker compose dovrebbe crearlo in automatico
 - admin login:pass is admin:admin
+- Per far funzionare l'ambiente di demo, dalla root del repo eseguire
+-  ./cli/bin/dev keycloak importConfig
+-  a quel punto esisterà un real addictive e uno user user@addictive.dev pass:addictive
+
+# Keystone
 
 
 ** Alternatives **

@@ -17,7 +17,7 @@ server {
         add_header 'Vary' 'Origin' always;
         add_header 'Access-Control-Allow-Methods' 'GET, PATCH, PUT, DELETE, POST, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,x-csrftoken,Authorization,x-forwarded-for' always;
-        proxy_pass http://keystone:3000;
+        proxy_pass http://${KEYSTONE_CONTAINER}:${KEYSTONE_CONTAINER_PORT};
     }
 }
 

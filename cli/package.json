@@ -21,6 +21,7 @@
     "@oclif/plugin-help": "^5",
     "@oclif/plugin-plugins": "^2.1.2",
     "concurrently": "^7.4.0",
+    "docker-compose": "^0.23.17",
     "dotenv": "^16.0.3",
     "hosts-so-easy": "^1.2.9",
     "nodemon": "^2.0.20"

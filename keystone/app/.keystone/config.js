@@ -106,34 +106,14 @@ var lists = {
   })
 };
 
-// auth.ts
-var import_crypto = require("crypto");
-var import_auth = require("@keystone-6/auth");
-var import_session = require("@keystone-6/core/session");
-var sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret && true) {
-  sessionSecret = (0, import_crypto.randomBytes)(32).toString("hex");
-}
-var { withAuth } = (0, import_auth.createAuth)({
-  listKey: "User",
-  identityField: "email",
-  sessionData: "name createdAt",
-  secretField: "password",
-  initFirstItem: false ? void 0 : {
-    fields: ["name", "email", "password"]
-  }
-});
-var sessionMaxAge = 60 * 60 * 24 * 30;
-var session = (0, import_session.statelessSessions)({
-  maxAge: sessionMaxAge,
-  secret: sessionSecret
-});
-
 // keystone.ts
+var Path = __toESM(require("path"));
+var import_session = require("@keystone-6/core/session");
 var import_keystone_nextjs_auth = require("@opensaas/keystone-nextjs-auth");
 var import_keycloak = __toESM(require("next-auth/providers/keycloak"));
-var sessionSecret2 = process.env.SESSION_SECRET;
-if (!sessionSecret2) {
+var sessionSecret = process.env.SESSION_SECRET;
+var sessionMaxAge = 60 * 60 * 24 * 30;
+if (!sessionSecret) {
   throw new Error(
     "The SESSION_SECRET environment variable must be set in production"
   );
@@ -143,29 +123,59 @@ var auth = (0, import_keystone_nextjs_auth.createAuth)({
   identityField: "subjectId",
   sessionData: `id name email`,
   autoCreate: true,
-  resolver: async ({ user, profile, account }) => {
-    const username = user.name;
-    const email = user.email;
-    return { email, username };
+  resolver: async ({ user, profile }) => {
+    const name = user.name;
+    const email = profile.email;
+    return { email, name };
   },
-  keystonePath: "/",
-  sessionSecret: sessionSecret2,
+  keystonePath: "/admin",
+  pages: {
+    signIn: "/admin/auth/signin"
+  },
+  sessionSecret,
   providers: [
     (0, import_keycloak.default)({
       clientId: process.env.AUTH_CLIENT_ID,
-      clientSecret: process.env.KEYCLOAK_SECRET,
-      issuer: "https://keycloak:8080/realms/addictive",
-      wellKnown: `http://keycloak:8080/realms/addictive/.well-known/openid-configuration`
+      clientSecret: process.env.AUTH_CLIENT_SECRET,
+      issuer: `${process.env.AUTH_DOMAIN_INTERNAL}`,
+      wellKnown: `${process.env.AUTH_DOMAIN_INTERNAL}/.well-known/openid-configuration`
     })
   ]
 });
 var keystone_default = auth.withAuth(
   (0, import_core2.config)({
+    server: {
+      cors: {
+        origin: [process.env.FRONTEND || "http://localhost:7777"],
+        credentials: true
+      }
+    },
     db: {
       provider: "sqlite",
       url: "file:./keystone.db"
     },
+    ui: {
+      isAccessAllowed: (context) => !!context.session?.data,
+      publicPages: ["/admin/auth/signin", "/admin/auth/error"],
+      getAdditionalFiles: [
+        async () => [
+          {
+            mode: "copy",
+            inputPath: Path.resolve("./customPages/signin.js"),
+            outputPath: "pages/auth/signin.js"
+          },
+          {
+            mode: "copy",
+            inputPath: Path.resolve("./customPages/error.js"),
+            outputPath: "pages/auth/error.js"
+          }
+        ]
+      ]
+    },
     lists,
-    session
+    session: (0, import_session.statelessSessions)({
+      maxAge: sessionMaxAge,
+      secret: sessionSecret
+    })
   })
 );
